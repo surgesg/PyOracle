@@ -104,6 +104,7 @@ def add_state(states, new_data, threshold = 0, weights = None):
 
 def build_oracle(input_data, threshold, feature = None):
     # features should be determined by the analysis code
+    # need to embed timing info into the oracle 
     oracle = []
 
     # initialize weights 
