@@ -27,10 +27,8 @@ def draw(current_state):
         # iterate over forward transitions
         for tran in state.transition:
             # if forward transition to next state
-            print i, tran.pointer.number
             if tran.pointer.number == i + 1:
                 # draw forward transitions
-                print 'line'
                 next_x = (float(i + 1) / len(oracle) * width) + 0.5 * 1.0 / len(oracle) * width
                 current_x = x_pos + (0.25 / len(oracle) * width)
                 draw.line((current_x, height/2, next_x, height/2), width=1,fill='white')

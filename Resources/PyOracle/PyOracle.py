@@ -40,6 +40,7 @@ def get_distance(event1, event2, weights = None):
     centroid = ((event1['centroid'] - event2['centroid']) 
                 * (event1['centroid'] - event2['centroid'])
                 * weights['centroid'])
+
     rms = ((event1['rms'] - event2['rms']) 
             * (event1['rms'] - event2['rms'])
             * weights['rms'])
@@ -48,7 +49,7 @@ def get_distance(event1, event2, weights = None):
             * (event1['zerocrossings'] - event2['zerocrossings'])
             * weights['zerocrossings'])
 
-    return mfccs + centroid + rms + chroma + zerocrossings
+    return mfccs + centroid + rms + chroma + zerocrossings 
 
 def add_initial_state(states):
     states.append(State.State(0))
@@ -124,3 +125,14 @@ def build_oracle(input_data, threshold, feature = None):
         # progress output
     return oracle 
 
+def build_weighted_oracle(input_data, threshold, weights):
+    # features should be determined by the analysis code
+    # need to embed timing info into the oracle 
+    oracle = []
+
+    add_initial_state(oracle)
+    num_events = len(input_data)
+    for i, event in enumerate(input_data):
+        add_state(oracle, event, threshold, weights)
+        # progress output
+    return oracle 
