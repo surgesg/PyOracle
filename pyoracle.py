@@ -7,6 +7,8 @@ greg surges
 audio oracle analysis in python
 '''
 
+import numpy as np
+
 import Resources.helpers
 import Resources.PyOracle.PyOracle
 import Resources.PyOracle.IR
@@ -64,6 +66,28 @@ def calculate_ir(oracle):
     '''
     IR, code, compror = Resources.PyOracle.IR.get_IR(oracle)
     return IR, code, compror
+
+def make_transition_matrix(oracle):
+    '''
+    return transition matrix as 2d numpy array
+    '''
+    matrix = np.zeros((len(oracle), len(oracle)), dtype = np.int8) 
+    for i, state in enumerate(oracle):
+        for t in state.transition:
+            matrix[i][t.pointer.number] = 1
+    return matrix
+
+def make_suffix_vector(oracle):
+    '''
+    return suffix vector as 1d numpy array
+    '''
+    suffix_vector = np.zeros((len(oracle)), np.int16) 
+    for i, state in enumerate(oracle):
+        try:
+            suffix_vector[i] = state.suffix.number
+        except:
+            suffix_vector[i] = 0
+    return suffix_vector
 
 def save_oracle(oracle, filename):
     print 'saving to ', filename
