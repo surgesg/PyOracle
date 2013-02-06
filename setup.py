@@ -1,6 +1,6 @@
 from distutils.core import setup
 setup(name='pyoracle',
-      version='01',
+      version='03',
       author = 'Greg Surges',
       author_email = 'surgesg@gmail.com',
       py_modules = ['pyoracle', 
