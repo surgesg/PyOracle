@@ -31,6 +31,12 @@ def generate(oracle, seq_len, p, k):
                 #copy forward according to transitions
                 I = oracle[k].transition
                 I = [t.pointer.number for t in I]
+                if len(I) == 0:
+                    # if last state, choose a suffix
+                    k = oracle[k].suffix.number
+                    ktrace.append(k)
+                    I = oracle[k].transition
+                    I = [t.pointer.number for t in I]
                 sym = I[int(np.floor(random.random()*len(I)))]
                 s.append(sym-1)
                 k = sym
@@ -60,11 +66,17 @@ def generate(oracle, seq_len, p, k):
     kend = k
     return s, kend, ktrace
 
+def make_win(n):
+    win = np.array([np.hanning(n) + 0.001, np.hanning(n) + 0.001])
+    win = np.transpose(win)
+    return win
+
 def generate_audio(ifilename, ofilename, buffer_size, hop, oracle, seq_len, p, k):
     fs, x = wavfile.read(ifilename)
     xmat = []
     for i in range(0, len(x), hop):
-        xmat.append(np.array(x[i:i+buffer_size]))
+        new_mat = np.array(x[i:i+buffer_size])
+        xmat.append(new_mat)
     xmat = np.array(xmat)
 
     s, kend, ktrace = generate(oracle, seq_len, p, k) 
@@ -73,21 +85,21 @@ def generate_audio(ifilename, ofilename, buffer_size, hop, oracle, seq_len, p, k
     framelen = len(xnewmat[0])
     nframes = len(xnewmat)
 
-    wsum = np.zeros(((nframes-1) * hop + framelen, 2), dtype=np.int16) 
+    wsum = np.zeros(((nframes-1) * hop + framelen, 2)) 
 
-    win = np.array([np.hanning(framelen), np.hanning(framelen)])
-    win = np.transpose(win)
+    win = make_win(framelen)
 
     x = np.zeros(((nframes-1) * hop + framelen, 2)) 
     win_pos = range(0, len(x), hop)
     for i in range(0, nframes):
         # this is the overlap add sec
-        x[win_pos[i]:win_pos[i]+len(xnewmat[i])] = x[win_pos[i]:win_pos[i]+len(xmat[i])] + xnewmat[i] * win
-        wsum[win_pos[i]:win_pos[i]+len(xmat[i])] = wsum[win_pos[i]:win_pos[i]+len(xmat[i])] + win 
-    # x[hop:-1-hop] = x[hop:-1-hop] / wsum[hop:-1-hop]
+        win = make_win(len(xnewmat[i]))
+        x[win_pos[i]:win_pos[i]+len(xnewmat[i])] = x[win_pos[i]:win_pos[i]+len(xnewmat[i])] + xnewmat[i] * win
+        # wsum[win_pos[i]:win_pos[i]+framelen] = wsum[win_pos[i]:win_pos[i]+framelen] + win 
+    # x[hop:-hop] = x[hop:-hop] / wsum[hop:-hop]
     x = np.array(x, dtype=np.int)
 
 
     wavfile.write(ofilename, fs, x)
-    return x
+    return x, wsum
 
