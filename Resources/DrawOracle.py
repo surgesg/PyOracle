@@ -10,11 +10,14 @@ image = []
 
 lrs_threshold = 0
 
-def start_draw(_oracle):
+def start_draw(_oracle, size=(900*4, 400*4)):
     global oracle
     global image
+    global width, height
+    width = size[0]
+    height = size[1]
     current_state = 0
-    image = Image.new('RGB', (width, height))
+    image = Image.new('RGB', (size[0], size[1]))
     oracle = _oracle 
     return draw(current_state)
 

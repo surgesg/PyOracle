@@ -48,7 +48,7 @@ def make_weighted_oracle(threshold, features_list, weights):
     oracle = Resources.PyOracle.PyOracle.build_weighted_oracle(events, threshold, weights)
     return oracle
 
-def make_dynamic_oracle(threshold, features_list, weights):
+def make_dynamic_oracle(threshold, features_list, weights, frames_per_state = 1):
     '''
     build an oracle given:
         threshold - distance function theshold
@@ -57,6 +57,7 @@ def make_dynamic_oracle(threshold, features_list, weights):
             in computing distance function
     '''
     events = Resources.helpers.features_to_events(features_list)
+    events = Resources.helpers.average_events(events, frames_per_state)
     oracle = Resources.PyOracle.PyOracle.build_dynamic_oracle(events, threshold, weights)
     return oracle
 
@@ -66,6 +67,24 @@ def calculate_ir(oracle):
     '''
     IR, code, compror = Resources.PyOracle.IR.get_IR(oracle)
     return IR, code, compror
+
+def calculate_ideal_threshold(range=(0.0, 1.0, 0.1), features = None, feature = None, frames_per_state = 1):
+    ''' 
+    using IR, return optimum distance threshold for a given oracle
+    '''
+    thresholds = np.arange(range[0], range[1], range[2])
+    oracles = []
+    irs = []
+    for threshold in thresholds:
+        tmp_oracle = make_oracle(threshold, features, feature, frames_per_state)
+        oracles.append(tmp_oracle)
+        tmp_ir, code, compror = calculate_ir(tmp_oracle)
+        # is it a sum?
+        irs.append(sum(tmp_ir))
+    # now pair irs and thresholds in a vector, and sort by ir
+    ir_thresh_pairs = [(a,b) for a, b in zip(irs, thresholds)]
+    ir_thresh_pairs = sorted(ir_thresh_pairs, key= lambda x: x[0], reverse = True)
+    return ir_thresh_pairs[0]
 
 def make_transition_matrix(oracle):
     '''
@@ -100,8 +119,8 @@ def load_oracle(filename):
     print 'done!'
     return oracle
 
-def draw_oracle(oracle, filename):
-    image = Resources.DrawOracle.start_draw(oracle) 
+def draw_oracle(oracle, filename, size=(900*4, 400*4)):
+    image = Resources.DrawOracle.start_draw(oracle, size) 
     image.save(filename)
     pass 
 

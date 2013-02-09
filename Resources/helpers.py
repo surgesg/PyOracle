@@ -132,6 +132,7 @@ def features_to_events(features):
         new_event['centroid'] = centroid[i]
         new_event['chroma'] = chroma[i]
         new_event['zerocrossings'] = zerocrossings[i]
+        new_event['time'] = fft_size * i
         events.append(new_event) 
         event_time += fft_size
     return events
