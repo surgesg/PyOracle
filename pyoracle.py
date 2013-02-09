@@ -13,6 +13,7 @@ import Resources.helpers
 import Resources.PyOracle.PyOracle
 import Resources.PyOracle.IR
 import Resources.DrawOracle
+import Resources.generate
 
 def make_features(filename, fft_size = 4096):
     '''
