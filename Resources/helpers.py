@@ -59,6 +59,7 @@ def average_events(events, n):
     for i in range(0, len(events), n):
         slice = events[i:i+n]
         tmp_event = {}
+        tmp_event['time'] = events[i]['time']
         tmp_event['zerocrossings'] = float(sum([x['zerocrossings'] for x in slice])) / n 
         tmp_event['rms'] = float(sum([x['rms'] for x in slice])) / n
         tmp_event['centroid'] = float(sum([x['centroid'] for x in slice])) / n
