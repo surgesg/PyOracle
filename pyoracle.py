@@ -15,12 +15,13 @@ import Resources.PyOracle.IR
 import Resources.DrawOracle
 import Resources.generate
 
-def make_features(filename, fft_size = 4096):
+def make_features(filename, fft_size = 4096, hop_size = 4096):
     '''
     extract list of features from audio file, using Bregman module
     features = ['mfcc', 'centroid', 'rms', 'chroma', 'zerocrossings']
     '''
     Resources.helpers.set_fft_size(fft_size)
+    Resources.helpers.set_hop_size(hop_size)
     features = Resources.helpers.extract_audio_features(filename)
     return features
 

@@ -48,10 +48,15 @@ def normalize(loaded_data):
 ####################################################################################
 
 fft_size = 8192
+hop_size = 8192
 
 def set_fft_size(n):
     global fft_size
     fft_size = n
+
+def set_hop_size(n):
+    global hop_size
+    hop_size = n
 
 def average_events(events, n):
     new_events = []
@@ -75,13 +80,13 @@ def average_events(events, n):
         new_events.append(tmp_event)
     return new_events
 
-def zerocrossings(filepath, size):
+def zerocrossings(filepath, size, h_size):
     ''' calculate and return zero crossings per size-block '''
     x, sr, fmt = wavread(filepath)    
     output_blocks = []
     # modified from https://gist.github.com/255291
     # for each block
-    for n in range(0, len(x), size):
+    for n in range(0, len(x), h_size):
         current_samples = x[n:n+size]
         indices = find((current_samples[1:] >= 0) & (current_samples[:-1] < 0)) 
         # crossings = sum([1 for m in range(n, n+size) if x[m+1] > 0 and x[m] <= 0])
@@ -91,7 +96,8 @@ def zerocrossings(filepath, size):
 def extract_audio_features(filepath):
     # first do mfccs
     features = {}
-    mfcc = MelFrequencyCepstrum(filepath, ncoef=38, log10=True, nfft=fft_size, wfft=fft_size, nhop=fft_size)
+    mfcc = MelFrequencyCepstrum(filepath, ncoef=38, log10=True, nfft=fft_size,
+            wfft=fft_size, nhop=hop_size)
     # get number of frames - each array in mfcc is one component
     frames = [[0]] * len(mfcc.X[0])
     num_frames = len(mfcc.X[0])
@@ -100,19 +106,21 @@ def extract_audio_features(filepath):
         for component in mfcc.X:
             frames[i].append(component[i])
     features['mfcc'] = frames
-    rms = RMS(filepath, nfft=fft_size, wfft=fft_size, nhop=fft_size)
+    rms = RMS(filepath, nfft=fft_size, wfft=fft_size, nhop=hop_size)
     features['rms'] = rms.X
-    mf_spec_centroid = MelFrequencySpectrumCentroid(filepath, nfft=fft_size, wfft=fft_size, nhop=fft_size)
+    mf_spec_centroid = MelFrequencySpectrumCentroid(filepath, nfft=fft_size,
+            wfft=fft_size, nhop=hop_size)
     features['centroid'] = mf_spec_centroid.X
     # chroma = Chromagram(filepath, log10=True, intensify=True, nfft=fft_size, wfft=fft_size, nhop=fft_size)
-    chroma = HighQuefrencyChromagram(filepath, log10=True, intensify=True, nfft=fft_size, wfft=fft_size, nhop=fft_size)
+    chroma = HighQuefrencyChromagram(filepath, log10=True, intensify=True,
+            nfft=fft_size, wfft=fft_size, nhop=hop_size)
     chroma_frames = [[0]] * len(chroma.X[0])
     for i, frame in enumerate(chroma.X[0]):
         chroma_frames[i] = []
         for component in chroma.X:
             chroma_frames[i].append(component[i])
     features['chroma'] = chroma_frames
-    features['zerocrossings'] = zerocrossings(filepath, fft_size)
+    features['zerocrossings'] = zerocrossings(filepath, fft_size, hop_size)
     features['num_events'] = len(features['centroid'])
     return features
 

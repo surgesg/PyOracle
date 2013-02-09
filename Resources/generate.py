@@ -5,6 +5,7 @@ generate.py
 import random
 import numpy as np
 from matplotlib.mlab import find
+from scipy.io import wavfile
 
 def generate(oracle, seq_len, p, k):
     '''
@@ -58,4 +59,35 @@ def generate(oracle, seq_len, p, k):
                 ktrace.append(k)
     kend = k
     return s, kend, ktrace
+
+def generate_audio(ifilename, ofilename, buffer_size, hop, oracle, seq_len, p, k):
+    fs, x = wavfile.read(ifilename)
+    xmat = []
+    for i in range(0, len(x), hop):
+        xmat.append(np.array(x[i:i+buffer_size]))
+    xmat = np.array(xmat)
+
+    s, kend, ktrace = generate(oracle, seq_len, p, k) 
+    xnewmat = xmat[:, s]
+
+    framelen = len(xnewmat[0])
+    nframes = len(xnewmat)
+
+    wsum = np.zeros(((nframes-1) * hop + framelen, 2), dtype=np.int16) 
+
+    win = np.array([np.hanning(framelen), np.hanning(framelen)])
+    win = np.transpose(win)
+
+    x = np.zeros(((nframes-1) * hop + framelen, 2)) 
+    win_pos = range(0, len(x), hop)
+    for i in range(0, nframes):
+        # this is the overlap add sec
+        x[win_pos[i]:win_pos[i]+len(xnewmat[i])] = x[win_pos[i]:win_pos[i]+len(xmat[i])] + xnewmat[i] * win
+        wsum[win_pos[i]:win_pos[i]+len(xmat[i])] = wsum[win_pos[i]:win_pos[i]+len(xmat[i])] + win 
+    # x[hop:-1-hop] = x[hop:-1-hop] / wsum[hop:-1-hop]
+    x = np.array(x, dtype=np.int)
+
+
+    wavfile.write(ofilename, fs, x)
+    return x
 
