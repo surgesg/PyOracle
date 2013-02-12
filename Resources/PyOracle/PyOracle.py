@@ -19,37 +19,39 @@ features = ['mfcc', 'centroid', 'rms', 'chroma', 'zerocrossings']
 #############################################################################
 
 def get_distance(event1, event2, weights = None):
-    """
-    get distance between frames 
-    """
+    '''
+    get distance between frames
+    '''
+    features = event1.keys()
+    if 'time' in features:
+        features.remove('time')
+
+    distance = 0
+
+    # if no weight, initialize by weighting all features equally
     if weights == None:
-        weights = {'mfcc': 1.0,            
-                   'centroid': 1.0,
-                   'rms': 1.0,
-                   'chroma': 1.0,
-                   'zerocrossings': 1.0}
-    
-    mfccs = izip(event1['mfcc'], event2['mfcc'])
-    mfccs = sum((a - b) * (a - b) for a, b in mfccs) / 38
-    mfccs *= weights['mfcc']
+        weights = {}
+        for feature in features:
+            weights[feature] = 1.0
 
-    chroma = izip(event1['chroma'], event2['chroma'])
-    chroma = sum((a - b) * (a - b) for a, b in chroma) / 12
-    chroma *= weights['chroma']
-    
-    centroid = ((event1['centroid'] - event2['centroid']) 
-                * (event1['centroid'] - event2['centroid'])
-                * weights['centroid'])
-
-    rms = ((event1['rms'] - event2['rms']) 
-            * (event1['rms'] - event2['rms'])
-            * weights['rms'])
-
-    zerocrossings = ((event1['zerocrossings'] - event2['zerocrossings']) 
-            * (event1['zerocrossings'] - event2['zerocrossings'])
-            * weights['zerocrossings'])
-
-    return mfccs + centroid + rms + chroma + zerocrossings 
+    for feature in features:
+        # get length of feature vec 
+        try:
+            n = len(event1[feature])
+        except:
+            n = 1
+        if n > 1:
+            # is a vector
+            data = izip(event1[feature], event2[feature])
+            data = sum((a - b) * (a - b) for a, b in data) / n
+            data *= weights[feature]
+            distance += data
+        else:
+            # is a scaler
+            data = ((event1[feature] - event2[feature]) * (event1[feature] - event2[feature]))
+            data *= weights[feature]
+            distance += data
+    return distance
 
 def add_initial_state(states):
     states.append(State.State(0))

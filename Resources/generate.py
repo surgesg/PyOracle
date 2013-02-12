@@ -7,6 +7,8 @@ import numpy as np
 from matplotlib.mlab import find
 from scipy.io import wavfile
 
+import PyOracle.IR
+
 def generate(oracle, seq_len, p, k):
     '''
     generate output state vector from audio oracle
@@ -67,7 +69,7 @@ def generate(oracle, seq_len, p, k):
     return s, kend, ktrace
 
 def make_win(n):
-    win = np.array([np.hanning(n) + 0.001, np.hanning(n) + 0.001])
+    win = np.array([np.hanning(n) + 0.00001, np.hanning(n) + 0.00001])
     win = np.transpose(win)
     return win
 
@@ -75,7 +77,7 @@ def generate_audio(ifilename, ofilename, buffer_size, hop, oracle, seq_len, p, k
     fs, x = wavfile.read(ifilename)
     xmat = []
     for i in range(0, len(x), hop):
-        new_mat = np.array(x[i:i+buffer_size])
+        new_mat = np.array(x[i:i+buffer_size]) # try changing array type?
         xmat.append(new_mat)
     xmat = np.array(xmat)
 
@@ -95,11 +97,79 @@ def generate_audio(ifilename, ofilename, buffer_size, hop, oracle, seq_len, p, k
         # this is the overlap add sec
         win = make_win(len(xnewmat[i]))
         x[win_pos[i]:win_pos[i]+len(xnewmat[i])] = x[win_pos[i]:win_pos[i]+len(xnewmat[i])] + xnewmat[i] * win
-        # wsum[win_pos[i]:win_pos[i]+framelen] = wsum[win_pos[i]:win_pos[i]+framelen] + win 
-    # x[hop:-hop] = x[hop:-hop] / wsum[hop:-hop]
+        wsum[win_pos[i]:win_pos[i]+len(xnewmat[i])] = wsum[win_pos[i]:win_pos[i]+len(xnewmat[i])] + win 
+    x[hop:-hop] = x[hop:-hop] / wsum[hop:-hop]
     x = np.array(x, dtype=np.int)
 
 
     wavfile.write(ofilename, fs, x)
     return x, wsum
 
+def generate_on_ir(ifilename, ofilename, buffer_size, hop, oracle, seq_len, p, k):
+    '''
+    generate to maximize IR over sequence
+    inputs:
+        oracle      - input oracle
+        seq_len     - output sequence length
+        k           - initial state
+    '''
+    fs, x = wavfile.read(ifilename)
+    xmat = []
+    for i in range(0, len(x), hop):
+        new_mat = np.array(x[i:i+buffer_size]) # try changing array type?
+        xmat.append(new_mat)
+    xmat = np.array(xmat)
+    
+    ir = PyOracle.IR.get_IR(oracle)[0]
+                                                                                                               
+    k = sorted(range(0, len(oracle)), key=lambda x: ir[x])[-1]
+    print k
+
+    s,kend,ktrace = compare_path(oracle, seq_len, ir, k) 
+    xnewmat = xmat[:, s]
+                                                                                                               
+    framelen = len(xnewmat[0])
+    nframes = len(xnewmat)
+                                                                                                               
+    wsum = np.zeros(((nframes-1) * hop + framelen, 2)) 
+                                                                                                               
+    win = make_win(framelen)
+                                                                                                               
+    x = np.zeros(((nframes-1) * hop + framelen, 2)) 
+    win_pos = range(0, len(x), hop)
+    for i in range(0, nframes):
+        # this is the overlap add sec
+        win = make_win(len(xnewmat[i]))
+        x[win_pos[i]:win_pos[i]+len(xnewmat[i])] = x[win_pos[i]:win_pos[i]+len(xnewmat[i])] + xnewmat[i] * win
+        wsum[win_pos[i]:win_pos[i]+len(xnewmat[i])] = wsum[win_pos[i]:win_pos[i]+len(xnewmat[i])] + win 
+    x[hop:-hop] = x[hop:-hop] / wsum[hop:-hop]
+    x = np.array(x, dtype=np.int)
+                                                                                                               
+    wavfile.write(ofilename, fs, x)
+    return x, wsum
+
+def compare_path(oracle, seq_len, ir_vec, k):
+    s = []
+    ktrace = [1]
+
+    for i in range(seq_len):
+        # generate each state
+        if k+1 < len(ir_vec) and ir_vec[k+1] > ir_vec[k]:
+            k = k + 1
+            ktrace.append(k)
+            s.append(k)
+        else:
+            pos = [t.pointer.number for t in oracle[k].transition]
+            try:
+                pos.append(oracle[k].suffix.number)
+            except:
+                pos.append(oracle[k].suffix)
+            for item in ktrace:
+                if item in pos:
+                    pos.remove(item)
+            pos = sorted(pos, key=lambda x: ir_vec[x], reverse = True)
+            k = pos[0]
+            ktrace.append(k)
+            s.append(k)
+    kend = k
+    return s, kend, ktrace
