@@ -52,71 +52,56 @@ def count_rev_suffixes(state):
         num = num + count_rev_suffixes(s)
     return num
 
-def get_IR(states):
+
+def ent(x):
+    n = sum(x)
+    h = 0
+    for i in range(len(x)):
+        p = float(x[i])/n
+        h = h-p*math.log(p,2)
+    return h
+
+def extend_code(code):
+    e_code = []
+    for i in range(len(code)):
+        e_code.append(code[i])
+        if code[i][0] > 1:
+            for j in range(code[i][0] - 1):
+                e_code.append((-0.9999999, i))
+    return e_code
+
+def get_IR(states, alpha = 1.1):
     '''
     compress PyOracle and get IR
+    new, time-evolving measure
+    02.17.2013
     '''
     code, compror = encode(states)
-
-    trn = [x.transition for x in states]
-    sfx = []
-    for x in states[1:]:
-        if x.suffix == 0:
-            sfx.append(0)
-        else:
-            sfx.append(x.suffix.number)
-    lrs = [x.lrs for x in states]
-
-	# proposed modification - 10.23.2012
-	# takes into account that all transitions are not equally probably (occuring
-	# with equal frequency over the length of the sequence
-
-    P = [0] * len(states[0].transition)
-    # rename
-    N = []
-    for t in states[0].transition: # for each new state
-        N_i = count_rev_suffixes(t.pointer)
-        N.append(N_i)
-        
-    for i in range(len(P)):
-        P[i] = float(N[i]) / sum(N)
     
-    C0 = -1 * sum([p * math.log(p, 2) for p in P]) 
-    alpha = 1 #variable to test the sensitivity to CO scaling
+    extended_code = extend_code(code)
     
-    # calculate IR from Compror
-    IR = [0] * len(states)
-    # C0 = math.log(len(trn[0]), 2)
-    N = len(lrs)
-    M = max(lrs)
-    try:
-        C1 = math.log(N, 2) + math.log(M, 2)
-    except ValueError: # if log(0)
-        C1 = math.log(N, 2) + math.log(0.0000000000000001, 2)
+    cw = [0] * len(extended_code)
+    for i, c in enumerate(extended_code):
+        cw[i] = c[0]+1
 
-    print len(IR)
-    for i in range(1, len(compror)):
-        #print i
-        #Shlomo:        L = compror[i] - compror[i - 1] 
-        L = compror[i][1]
-        #print len(IR), L, compror[i] - L, compror[i]
-        #Shlomo:       IR[compror[i - 1] + 1:compror[i]] = [C0 - C1 / j for j in range(1, L)]
-        print i, len(IR)
-        IR[compror[i][0] - L:compror[i][0]] = [C0*alpha - C1 / j for j in range(1, L)]
- 
-    print len(IR)
-    IR = [max(0, x) for x in IR]
-    print len(IR)
+    c0 = [1 if x[0] == 0 else 0 for x in extended_code]
+    h0 = [math.log(x, 2) for x in np.cumsum(c0)]
+
+    dti = [1 if x[0] == 0 else x[0] for x in extended_code]
+    ti = np.cumsum(dti)
+
+    h = [0]*len(cw)
+
+    for i in range(1, len(cw)):
+        h[i] = ent(cw[0:i+1])
+
+    h = np.array(h)
+    h0 = np.array(h0)
+    IR = alpha*h0-h
+
     return IR, code, compror
-    
-    '''		
-    print 'done'
-    
-    mem_len = 20
-    B_coefs = [1.0 / mem_len for i in range(0, mem_len)]
-    IR = lfilter(B_coefs, [1], IR)
-    '''
 
+    
 def get_IR_old(states):
     '''
     compress PyOracle and get IR

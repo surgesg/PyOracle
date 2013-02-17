@@ -63,11 +63,11 @@ def make_dynamic_oracle(threshold, features_list, weights, frames_per_state = 1)
     oracle = Resources.PyOracle.PyOracle.build_dynamic_oracle(events, threshold, weights)
     return oracle
 
-def calculate_ir(oracle):
+def calculate_ir(oracle, alpha=1.07):
     '''
     calculate information rate (IR) for a given oracle
     '''
-    IR, code, compror = Resources.PyOracle.IR.get_IR(oracle)
+    IR, code, compror = Resources.PyOracle.IR.get_IR(oracle, alpha)
     return IR, code, compror
 
 def calculate_ideal_threshold(range=(0.0, 1.0, 0.1), features = None, feature = None, frames_per_state = 1):
@@ -85,8 +85,9 @@ def calculate_ideal_threshold(range=(0.0, 1.0, 0.1), features = None, feature = 
         irs.append(sum(tmp_ir))
     # now pair irs and thresholds in a vector, and sort by ir
     ir_thresh_pairs = [(a,b) for a, b in zip(irs, thresholds)]
+    pairs_return = ir_thresh_pairs
     ir_thresh_pairs = sorted(ir_thresh_pairs, key= lambda x: x[0], reverse = True)
-    return ir_thresh_pairs[0]
+    return ir_thresh_pairs[0], pairs_return 
 
 def make_transition_matrix(oracle):
     '''
