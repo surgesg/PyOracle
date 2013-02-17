@@ -10,6 +10,7 @@
 
 import math
 from scipy.signal import lfilter
+import numpy as np
 
 def encode(states):
     ''' 
@@ -93,15 +94,19 @@ def get_IR(states):
     except ValueError: # if log(0)
         C1 = math.log(N, 2) + math.log(0.0000000000000001, 2)
 
+    print len(IR)
     for i in range(1, len(compror)):
         #print i
         #Shlomo:        L = compror[i] - compror[i - 1] 
         L = compror[i][1]
         #print len(IR), L, compror[i] - L, compror[i]
         #Shlomo:       IR[compror[i - 1] + 1:compror[i]] = [C0 - C1 / j for j in range(1, L)]
-        IR[compror[i][0] - L :compror[i][0]] = [C0*alpha - C1 / j for j in range(1, L)]
+        print i, len(IR)
+        IR[compror[i][0] - L:compror[i][0]] = [C0*alpha - C1 / j for j in range(1, L)]
  
+    print len(IR)
     IR = [max(0, x) for x in IR]
+    print len(IR)
     return IR, code, compror
     
     '''		

@@ -96,7 +96,7 @@ def zerocrossings(filepath, size, h_size):
 def extract_audio_features(filepath):
     # first do mfccs
     features = {}
-    mfcc = MelFrequencyCepstrum(filepath, ncoef=38, log10=True, nfft=fft_size,
+    mfcc = MelFrequencyCepstrum(filepath, ncoef=10, log10=True, nfft=fft_size,
             wfft=fft_size, nhop=hop_size)
     # get number of frames - each array in mfcc is one component
     frames = [[0]] * len(mfcc.X[0])
