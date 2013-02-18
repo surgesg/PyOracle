@@ -105,7 +105,7 @@ def generate_audio(ifilename, ofilename, buffer_size, hop, oracle, seq_len, p, k
     wavfile.write(ofilename, fs, x)
     return x, wsum
 
-def generate_on_ir(ifilename, ofilename, buffer_size, hop, oracle, seq_len, p, k):
+def generate_thumbnail(ifilename, ofilename, buffer_size, hop, oracle, seq_len, p, k):
     '''
     generate to maximize IR over sequence
     inputs:
@@ -120,12 +120,8 @@ def generate_on_ir(ifilename, ofilename, buffer_size, hop, oracle, seq_len, p, k
         xmat.append(new_mat)
     xmat = np.array(xmat)
     
-    ir = PyOracle.IR.get_IR(oracle)[0]
-                                                                                                               
-    k = sorted(range(0, len(oracle)), key=lambda x: ir[x])[-1]
-    print k
-
-    s,kend,ktrace = compare_path(oracle, seq_len, ir, k) 
+    s, kend, ktrace = follow_code(oracle) 
+    # return s
     xnewmat = xmat[:, s]
                                                                                                                
     framelen = len(xnewmat[0])
@@ -148,28 +144,112 @@ def generate_on_ir(ifilename, ofilename, buffer_size, hop, oracle, seq_len, p, k
     wavfile.write(ofilename, fs, x)
     return x, wsum
 
-def compare_path(oracle, seq_len, ir_vec, k):
+def follow_code(oracle):
+    ir, code, compror = PyOracle.IR.get_IR(oracle)
+    len_thresh = 8
+    
+    sorted_code = sorted(code, key= lambda x: x[0], reverse=True)
+    sorted_code = filter(lambda x: x[0] >= len_thresh, sorted_code)
     s = []
-    ktrace = [1]
+    kend = 0
+    ktrace = []
 
-    for i in range(seq_len):
-        # generate each state
-        if k+1 < len(ir_vec) and ir_vec[k+1] > ir_vec[k]:
-            k = k + 1
-            ktrace.append(k)
-            s.append(k)
-        else:
-            pos = [t.pointer.number for t in oracle[k].transition]
-            try:
-                pos.append(oracle[k].suffix.number)
-            except:
-                pos.append(oracle[k].suffix)
-            for item in ktrace:
-                if item in pos:
-                    pos.remove(item)
-            pos = sorted(pos, key=lambda x: ir_vec[x], reverse = True)
-            k = pos[0]
-            ktrace.append(k)
-            s.append(k)
-    kend = k
+    for i,cur in enumerate(sorted_code[:-2]):
+        if cur[0] > 0:
+            s.extend(range(cur[1], cur[1]+cur[0]))
+            dest = sorted_code[i+1][1]
+            tran = follow_path(oracle, dest, s[-1]) 
+            s.extend(tran[-2:1:-1])
+    
     return s, kend, ktrace
+
+def follow_path(oracle, dest, current):
+    if dest == current:
+        return [dest]
+    # print 'dest:', dest, 'current:', current
+    # COLLECT TRN AND SFX VECTORS
+    trn = [0] * len(oracle)
+    for i in range(len(oracle)):
+        trn[i] = [t.pointer.number for t in oracle[i].transition]
+    sfx = [0] * len(oracle)
+    for i in range(len(oracle)):
+        try:
+            sfx[i] = oracle[i].suffix.number 
+        except:
+            sfx[i] = oracle[i].suffix
+
+    visited_states = [dest]
+    # collect all unvisited possible next states
+    possibilities = trn[dest]
+    possibilities.append(sfx[dest])
+    possibilities = filter(lambda x: x not in visited_states, possibilities)
+    # add to list of visited 
+    visited_states.extend(possibilities) 
+
+    paths = [tuple([dest])] * len(possibilities)    
+
+    for i, pos in enumerate(possibilities):
+        new_list = list(paths[i])
+        new_list.append(pos)
+        paths[i] = tuple(new_list)
+    
+    # check for success
+    for path in paths:
+        if path[-1] == current:
+            return path
+        else:
+            # continue search
+            found = False
+
+    while not found:
+        new_paths = []
+        for p in paths:
+            c = p[-1]
+            possibilities = trn[c]
+            possibilities.append(sfx[c])
+            possibilities = filter(lambda x: x not in visited_states, possibilities)
+            # add to list of visited 
+            visited_states.extend(possibilities) 
+            for pos in possibilities:
+                new_list = list(p)
+                new_list.append(pos)
+                new_paths.append(tuple(new_list))
+                if pos == current:
+                    found = True
+                    path = new_list
+                    return path
+                    break
+        paths = new_paths 
+
+    # because we dont want to actually navigate TO state 0
+    for e in path:
+        if e is 0: remove(e)
+
+    return path
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
