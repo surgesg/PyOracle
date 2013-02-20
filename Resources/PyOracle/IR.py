@@ -78,16 +78,14 @@ def get_IR(states, alpha = 1.1):
     '''
     code, compror = encode(states)
     
-    extended_code = extend_code(code)
-    
-    cw = [0] * len(extended_code)
-    for i, c in enumerate(extended_code):
+    cw = [0] * len(code)
+    for i, c in enumerate(code):
         cw[i] = c[0]+1
 
-    c0 = [1 if x[0] == 0 else 0 for x in extended_code]
+    c0 = [1 if x[0] == 0 else 0 for x in code]
     h0 = [math.log(x, 2) for x in np.cumsum(c0)]
 
-    dti = [1 if x[0] == 0 else x[0] for x in extended_code]
+    dti = [1 if x[0] == 0 else x[0] for x in code]
     ti = np.cumsum(dti)
 
     h = [0]*len(cw)
@@ -97,7 +95,7 @@ def get_IR(states, alpha = 1.1):
 
     h = np.array(h)
     h0 = np.array(h0)
-    IR = alpha*h0-h
+    IR = ti, alpha*h0-h
 
     return IR, code, compror
 

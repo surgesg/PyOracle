@@ -66,6 +66,7 @@ def make_dynamic_oracle(threshold, features_list, weights, frames_per_state = 1)
 def calculate_ir(oracle, alpha=1.07):
     '''
     calculate information rate (IR) for a given oracle
+    note that IR is now tuples of times and values
     '''
     IR, code, compror = Resources.PyOracle.IR.get_IR(oracle, alpha)
     return IR, code, compror
@@ -82,7 +83,7 @@ def calculate_ideal_threshold(range=(0.0, 1.0, 0.1), features = None, feature = 
         oracles.append(tmp_oracle)
         tmp_ir, code, compror = calculate_ir(tmp_oracle)
         # is it a sum?
-        irs.append(sum(tmp_ir))
+        irs.append(sum(tmp_ir[1]))
     # now pair irs and thresholds in a vector, and sort by ir
     ir_thresh_pairs = [(a,b) for a, b in zip(irs, thresholds)]
     pairs_return = ir_thresh_pairs
