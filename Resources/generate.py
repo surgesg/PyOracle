@@ -177,13 +177,18 @@ def follow_path(oracle, dest, current):
             sfx[i] = oracle[i].suffix.number 
         except:
             sfx[i] = oracle[i].suffix
+    rsfx = [[]] * len(oracle)
+    for i in range(len(oracle)): 
+        rsfx[i] = [r.number for r in oracle[i].reverse_suffix]
 
     visited_states = [dest]
     # collect all unvisited possible next states
     possibilities = trn[dest]
     possibilities.append(sfx[dest])
+    for rs in rsfx[dest]:
+        possibilities.append(rs)
     possibilities = filter(lambda x: x not in visited_states, possibilities)
-    # add to list of visited 
+    # add to list of visited  
     visited_states.extend(possibilities) 
 
     paths = [tuple([dest])] * len(possibilities)    
@@ -207,6 +212,8 @@ def follow_path(oracle, dest, current):
             c = p[-1]
             possibilities = trn[c]
             possibilities.append(sfx[c])
+            for rs in rsfx[dest]:
+                possibilities.append(rs)
             possibilities = filter(lambda x: x not in visited_states, possibilities)
             # add to list of visited 
             visited_states.extend(possibilities) 
