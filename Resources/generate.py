@@ -101,7 +101,6 @@ def generate_audio(ifilename, ofilename, buffer_size, hop, oracle, seq_len, p, k
     x[hop:-hop] = x[hop:-hop] / wsum[hop:-hop]
     x = np.array(x, dtype=np.int)
 
-
     wavfile.write(ofilename, fs, x)
     return x, wsum
 

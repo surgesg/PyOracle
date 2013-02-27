@@ -46,6 +46,39 @@ def encode(states):
         j = i
     return code, compror
 
+def encode_old(states):
+    ''' 
+    return code and compror for a given Oracle representation
+    '''
+    compror = []
+    lrs = [x.lrs for x in states[1:]]
+    sfx = []
+    for x in states[1:]:
+        if x.suffix == 0:
+            sfx.append(0)
+        else:
+            sfx.append(x.suffix.number)
+
+    # sfx = [x.suffix.number for x in states[1:]]
+    code = []
+    code.append((0,1))
+    
+    j = 1
+    i = j
+    cnt = 1
+    while j < len(lrs):
+        while i < len(lrs) - 1 and lrs[i + 1] >= i - j + 1:
+            i = i + 1
+        if i == j:
+            i = i + 1
+            code.append((0,i))
+        else:
+            code.append((i - j, sfx[i] - i + j + 1))
+            compror.append(i) 
+        cnt = cnt + 1
+        j = i
+    return code, compror
+
 def count_rev_suffixes(state):
     num = 1
     for s in state.reverse_suffix:
@@ -104,7 +137,7 @@ def get_IR_old(states):
     '''
     compress PyOracle and get IR
     '''
-    code, compror = encode(states)
+    code, compror = encode_old(states)
 
     trn = [x.transition for x in states]
     sfx = []

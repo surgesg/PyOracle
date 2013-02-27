@@ -59,7 +59,6 @@ def add_initial_state(states):
 def add_state(states, new_data, threshold = 0, weights = None):
     # create a new state numbered i
     new_state = State.State(len(states))
-    # print 'added new state:', new_state.number
     states.append(new_state) 
     # assign a new transition from state i - 1 to state i
     states[-2].add_transition(new_data, states[-1]) 
