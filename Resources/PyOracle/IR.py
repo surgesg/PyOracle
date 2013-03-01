@@ -26,25 +26,25 @@ def encode(states):
             sfx.append(x.suffix.number)
 
     # sfx = [x.suffix.number for x in states[1:]]
-    code = []
-    code.append((0,1))
+    code = [0] * len(states) # changed from code = []
+    code[0] = (0,0) # changed from code = []
     
-    j = 1
+    j = 0 # changed from j = 1
     i = j
-    cnt = 1
+    cnt = 1 # changed from cnt = 2 (probably doesn't matter)
     while j < len(lrs):
         while i < len(lrs) - 1 and lrs[i + 1] >= i - j + 1:
             i = i + 1
         if i == j:
             i = i + 1
-            code.append((0,i))
+            code[cnt] = (0,i)
         else:
             #Shlomo: code.append((i - j, sfx[i] - i + j + 1))
-            code.append((i - j, sfx[i] - i + j))
+            code[cnt] = (i - j, sfx[i] - i + j)
             compror.append((i,i-j)) #Shlomo: changed from compror.append(i) 
         cnt = cnt + 1
         j = i
-    return code, compror
+    return code[0:cnt - 1], compror
 
 def encode_old(states):
     ''' 

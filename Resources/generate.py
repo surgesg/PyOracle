@@ -99,8 +99,7 @@ def generate_audio(ifilename, ofilename, buffer_size, hop, oracle, seq_len, p, k
         x[win_pos[i]:win_pos[i]+len(xnewmat[i])] = x[win_pos[i]:win_pos[i]+len(xnewmat[i])] + xnewmat[i] * win
         wsum[win_pos[i]:win_pos[i]+len(xnewmat[i])] = wsum[win_pos[i]:win_pos[i]+len(xnewmat[i])] + win 
     x[hop:-hop] = x[hop:-hop] / wsum[hop:-hop]
-    x = np.array(x, dtype=np.int)
-
+    x = np.array(x, dtype=np.int32)
     wavfile.write(ofilename, fs, x)
     return x, wsum
 
