@@ -63,19 +63,21 @@ def make_dynamic_oracle(threshold, features_list, weights, frames_per_state = 1)
     oracle = Resources.PyOracle.PyOracle.build_dynamic_oracle(events, threshold, weights)
     return oracle
 
-def calculate_ir(oracle, alpha=1.07, old=False):
+def calculate_ir(oracle, alpha=1, type='cum'):
     '''
     calculate information rate (IR) for a given oracle
     note that IR is now tuples of times and values
     '''
-    if old:
+    if type=='old':
         IR, code, compror = Resources.PyOracle.IR.get_IR_old(oracle)
+    elif type=='cum':
+    	IR, code, compror = Resources.PyOracle.IR.get_IR_cum(oracle,alpha)
     else:
         IR, code, compror = Resources.PyOracle.IR.get_IR(oracle, alpha)
     return IR, code, compror
 
 def calculate_ideal_threshold(range=(0.0, 1.0, 0.1), features = None, feature =
-        None, frames_per_state = 1, alpha = 1.07,  old=False):
+        None, frames_per_state = 1, alpha = 1,  type='cum'):
     ''' 
     using IR, return optimum distance threshold for a given oracle
     '''
@@ -85,9 +87,9 @@ def calculate_ideal_threshold(range=(0.0, 1.0, 0.1), features = None, feature =
     for threshold in thresholds:
         tmp_oracle = make_oracle(threshold, features, feature, frames_per_state)
         oracles.append(tmp_oracle)
-        tmp_ir, code, compror = calculate_ir(tmp_oracle, alpha, old)
+        tmp_ir, code, compror = calculate_ir(tmp_oracle, alpha, type)
         # is it a sum?
-        if old:
+        if type=='old' or type=='cum':
             irs.append(sum(tmp_ir))
         else:
             irs.append(sum(tmp_ir[1]))

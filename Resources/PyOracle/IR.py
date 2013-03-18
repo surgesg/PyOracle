@@ -26,25 +26,25 @@ def encode(states):
             sfx.append(x.suffix.number)
 
     # sfx = [x.suffix.number for x in states[1:]]
-    code = [0] * len(states) # changed from code = []
-    code[0] = (0,0) # changed from code = []
+    code = []
+    code.append((0,1))
     
-    j = 0 # changed from j = 1
+    j = 1
     i = j
-    cnt = 1 # changed from cnt = 2 (probably doesn't matter)
+    cnt = 1
     while j < len(lrs):
         while i < len(lrs) - 1 and lrs[i + 1] >= i - j + 1:
             i = i + 1
         if i == j:
             i = i + 1
-            code[cnt] = (0,i)
+            code.append((0,i))
         else:
             #Shlomo: code.append((i - j, sfx[i] - i + j + 1))
-            code[cnt] = (i - j, sfx[i] - i + j)
+            code.append((i - j, sfx[i] - i + j))
             compror.append((i,i-j)) #Shlomo: changed from compror.append(i) 
         cnt = cnt + 1
         j = i
-    return code[0:cnt - 1], compror
+    return code, compror
 
 def encode_old(states):
     ''' 
@@ -174,3 +174,37 @@ def get_IR_old(states):
         L = compror[i] - compror[i - 1]
         IR[compror[i - 1]:compror[i]] = [max(C0 - C1 / L, 0)] * L
     return IR, code, compror
+
+def get_IR_cum(states,alpha=1):
+	
+	code, compror = encode(states)
+
+	cw0 = np.zeros(len(states)) #cw0 counts the appearance of new states only 
+	cw1 = np.zeros(len(states)) #cw1 counts the appearance of all compror states
+	BL = np.zeros(len(states))  #BL is the block length of compror codewords
+
+	j = 0
+	for i in range(len(code)):
+		if code[i][0] == 0:
+			cw0[j] = 1
+			cw1[j] = 1
+			BL[j] = 1
+#			print cw0[j],cw1[j]
+			j = j+1
+		else:
+			L = code[i][0]	
+			cw0[j:j+L] = [0]*L
+			cw1[j:j+L] = np.concatenate(([1], np.zeros(L-1)))
+			BL[j:j+L] = L #range(1,L+1)
+#			print L,cw0[j:j+L],cw1[j:j+L]
+			j = j+L
+#		raw_input()
+
+
+	H0 = np.array([math.log(x,2) for x in np.cumsum(cw0)])
+	H1 = np.array([math.log(x,2) for x in np.cumsum(cw1)])
+	H1 = H1/BL
+	IR = alpha*H0-H1
+	IR = np.array([max(0, x) for x in IR])
+
+	return IR, code, compror
