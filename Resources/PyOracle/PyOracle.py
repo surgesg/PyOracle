@@ -1,9 +1,9 @@
 #############################################################################
 # pyoracle.py 
 # builds a factor oracle from an input string of audio features
-# modified 09.18.2012
+# modified 03.18.2013
 # greg surges
-# copyleft 2011 - 2012
+# copyleft 2011 - 2013
 #############################################################################
 
 import time
@@ -12,7 +12,7 @@ import State
 from random import randint
 from itertools import izip
 
-oracle = []
+oracle = {'sfx': [], 'trn': [], 'rsfx': [], 'lrs': [], 'data': []}
 features = ['mfcc', 'centroid', 'rms', 'chroma', 'zerocrossings']
 #############################################################################
 # ORACLE CONSTRUCTION FUNCTIONS
@@ -53,9 +53,75 @@ def get_distance(event1, event2, weights = None):
             distance += data
     return distance
 
+'''
 def add_initial_state(states):
     states.append(State.State(0))
+'''
+def add_initial_state(oracle):
+    oracle['sfx'].append(None)
+    oracle['rsfx'].append([])
+    oracle['trn'].append([])
+    oracle['lrs'].append(0)
+    oracle['data'].append(0)
 
+def add_state(oracle, new_data, threshold = 0, weights = None):
+    # create new state
+    oracle['sfx'].append(0)
+    oracle['rsfx'].append([])
+    oracle['trn'].append([])
+    oracle['lrs'].append(0)
+    oracle['data'].append(new_data)
+    n_states = len(oracle['lrs']) 
+    i = n_states - 1
+
+    # assign new transition from state i-1 to i
+    oracle['trn'][i - 1].append(i)
+
+    k = oracle['sfx'][i - 1] 
+    print n_states, i, k
+    pi_1 = i - 1
+
+    # iteratively backtrack suffixes from state i-1
+    while k != None:
+        dvec = [get_distance(new_data, oracle['data'][s], weights) < threshold for s in oracle['trn'][k]]
+        # if no transition from suffix
+        if True not in dvec:
+            oracle['trn'][k].append(i)
+            pi_1 = k
+            k = oracle['sfx'][k]
+        else:
+            break
+    # if backtrack ended before 0
+    if k == None:
+        oracle['sfx'][i] = 0
+    else:
+        # filter out all above distance thresh
+        filtered_transitions = filter(lambda x: get_distance(oracle['data'][x], new_data, weights) <= threshold, oracle['trn'][k])
+        # sort possible suffixes by LRS
+        sorted_list = sorted(filtered_transitions, key = lambda x: oracle['lrs'][x])
+        for t in sorted_list:
+            if get_distance(oracle['data'][t], new_data, weights) <= threshold:
+                # add suffix
+                S_i = t
+                oracle['sfx'][i] = S_i
+                
+                # add rev suffix
+                oracle['rsfx'][S_i] = i
+                break
+    # LRS 
+    ss = oracle['sfx'][-1]
+    if ss == 0 or ss == 1:
+        oracle['lrs'][-1] = 0
+    else:
+        pi_2 = ss - 1
+        if pi_2 == oracle['sfx'][pi_1]:
+            oracle['lrs'][-1] = oracle['lrs'][pi_1] + 1
+        else:
+            while oracle['sfx'][pi_2] != oracle['sfx'][pi_1]:
+                pi_2 = oracle['sfx'][pi_2]
+            oracle['lrs'][-1] = min(oracle['lrs'][pi_1], oracle['lrs'][pi_2]) + 1
+
+'''
 def add_state(states, new_data, threshold = 0, weights = None):
     # create a new state numbered i
     new_state = State.State(len(states))
@@ -103,12 +169,14 @@ def add_state(states, new_data, threshold = 0, weights = None):
             while pi_2.suffix != pi_1.suffix:
                 pi_2 = pi_2.suffix
             states[-1].lrs = min(pi_1.lrs, pi_2.lrs) + 1
+'''
 
 def build_oracle(input_data, threshold, feature = None):
     # features should be determined by the analysis code
     # need to embed timing info into the oracle 
-    oracle = []
+    global oracle
 
+    oracle = {'sfx': [], 'trn': [], 'rsfx': [], 'lrs': [], 'data': []}
     # initialize weights 
     weights = {'mfcc': 0.0,            
                'centroid': 0.0,
