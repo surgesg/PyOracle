@@ -1,4 +1,3 @@
-import PyOracle.State
 from random import randint
 
 from PIL import Image, ImageDraw, ImageFilter

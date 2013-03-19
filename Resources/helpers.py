@@ -14,9 +14,6 @@ import numpy as np
 import midi
 from matplotlib.mlab import find
 
-from Resources.PyOracle.State import *
-from Resources.PyOracle.Transition import *
-
 from bregman.suite import *
 
 features = ['mfcc', 'pitch', 'zerocross', 'brightness', 'centroid', 'rolloff', 'rms']

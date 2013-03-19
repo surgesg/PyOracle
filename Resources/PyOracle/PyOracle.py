@@ -8,7 +8,6 @@
 
 import time
 
-import State
 from random import randint
 from itertools import izip
 
