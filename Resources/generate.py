@@ -28,41 +28,39 @@ def generate(oracle, seq_len, p, k):
 
     for i in range(seq_len):
         # generate each state
-        if oracle[k].suffix != 0:
+        if oracle['sfx'][k] != 0:
             if (random.random() < p):
                 #copy forward according to transitions
-                I = oracle[k].transition
-                I = [t.pointer.number for t in I]
+                I = oracle['trn'][k]
                 if len(I) == 0:
                     # if last state, choose a suffix
-                    k = oracle[k].suffix.number
+                    k = oracle['sfx'][k]
                     ktrace.append(k)
-                    I = oracle[k].transition
-                    I = [t.pointer.number for t in I]
+                    I = oracle['trn'][k]
                 sym = I[int(np.floor(random.random()*len(I)))]
                 s.append(sym-1)
                 k = sym
                 ktrace.append(k)
-                pass
             else:
                 # copy any of the next symbols
-                k = oracle[k].suffix.number
+                k = oracle['sfx'][k]
                 ktrace.append(k)
-                I = oracle[k].transition
-                I = [t.pointer.number for t in I]
+                I = oracle['trn'][k]
                 sym = I[int(np.floor(random.random()*len(I)))]
                 s.append(sym-1)
                 k = sym
                 ktrace.append(k)
         else:
-            if k < len(oracele):
-                next_k = find([o.transition.pointer.number for o in oracle] == k+1)
+            if k < len(oracle['sfx']) - 1:
+                next_k = k+1
+                # next_k = find([o.transition.pointer.number for o in oracle] == k+1)
                 s.append(next_k)
                 k = k+1
                 ktrace.append(k)
             else:
-                nextk = random.random*len(oracle)
-                s.append(find([p.pointer.number for p in oracle[0].transtion] == nextk))
+                nextk = int(random.random()*(len(oracle['sfx']) - 1))
+                # s.append(find(oracle['trn'][0] == nextk))
+                s.append(nextk)
                 k = nextk
                 ktrace.append(k)
     kend = k
