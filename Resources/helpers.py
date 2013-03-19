@@ -150,60 +150,14 @@ def features_to_events(features):
 # oracle file helpers 
 ####################################################################################
 
-def process_oracle_for_shelve(oracle):
-    processed_oracle = []
-    for state in oracle:
-        new_state = {}
-        try:
-            new_state['number'] = state.number
-        except:
-            print 'failed on number'
-        try:
-            new_state['lrs'] = state.lrs
-        except:
-            print 'failed lrs'
-        try:
-            if state.suffix:
-                new_state['suffix'] = state.suffix.number
-            else:
-                new_state['suffix'] = state.suffix
-        except:
-            print state.suffix
-            print 'failed suffix'
-        try:
-            new_state['reverse_suffix'] = [r.number for r in state.reverse_suffix]
-        except:
-            print 'failed rev suf'
-        try:
-            new_state['transition'] = [t.pointer.number for t in state.transition]
-        except:
-            print 'failed transition'
-        processed_oracle.append(new_state)
-    return processed_oracle
-
-def process_shelve_to_oracle(shelved_oracle):
-    oracle = [State(n) for n in range(len(shelved_oracle))]
-    for i, state in enumerate(shelved_oracle):
-        oracle[i] = State(state['number'])
-        oracle[i].add_suffix(oracle[state['suffix']])
-        oracle[i].transition = [Transition(oracle[t], oracle[t]) for t in state['transition']]
-        oracle[i].lrs = state['lrs']
-        oracle[i].reverse_suffix = [oracle[rs] for rs in state['reverse_suffix']]
-    return oracle
-
 def save_oracle(oracle, filename):
-    sys.setrecursionlimit(50000)
     file = shelve.open(filename)
-    processed_oracle = process_oracle_for_shelve(oracle)
-    file['oracle'] = processed_oracle
+    file['oracle'] = oracle
     file.close()
 
 def load_oracle(filename):
-    oracle = []
     file = shelve.open(filename)
-    local_oracle = file['oracle']
-    local_oracle = process_shelve_to_oracle(local_oracle)
-    oracle = local_oracle
+    oracle = file['oracle']
     file.close()
     return oracle
 
