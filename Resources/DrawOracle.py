@@ -1,6 +1,9 @@
 from random import randint
 
-from PIL import Image, ImageDraw, ImageFilter
+try:
+    from PIL import Image, ImageDraw, ImageFilter
+except:
+    print 'pil not loaded - hopefully running in max'
 
 width = 900 * 4 
 height = 400 * 4

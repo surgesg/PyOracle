@@ -11,10 +11,12 @@ import sys
 import shelve
 from scipy.signal import medfilt
 import numpy as np
-import midi
 from matplotlib.mlab import find
 
-from bregman.suite import *
+try:
+    from bregman.suite import *
+except:
+    print 'bregman suite not imported - hopefully running in max'
 
 features = ['mfcc', 'pitch', 'zerocross', 'brightness', 'centroid', 'rolloff', 'rms']
 

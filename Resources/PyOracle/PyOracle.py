@@ -12,7 +12,6 @@ from random import randint
 from itertools import izip
 
 oracle = {'sfx': [], 'trn': [], 'rsfx': [], 'lrs': [], 'data': []}
-features = ['mfcc', 'centroid', 'rms', 'chroma', 'zerocrossings']
 #############################################################################
 # ORACLE CONSTRUCTION FUNCTIONS
 #############################################################################
