@@ -57,25 +57,37 @@ def set_hop_size(n):
     global hop_size
     hop_size = n
 
+def features_to_events(features):
+    events = []
+    keys = features.keys()
+
+    num_events = len(features[keys[0]])
+
+    for i in range(num_events - 1):
+        new_event = {}
+        for key in keys:
+            new_event[key] = features[key][i]
+        events.append(new_event)    
+    
+    return events
+
 def average_events(events, n):
     new_events = []
-    # iterate by n over events
+    keys = events[0].keys()
+    
     for i in range(0, len(events), n):
-        slice = events[i:i+n]
+        block = events[i:i+n]
         tmp_event = {}
-        tmp_event['time'] = events[i]['time']
-        tmp_event['zerocrossings'] = float(sum([x['zerocrossings'] for x in slice])) / n 
-        tmp_event['rms'] = float(sum([x['rms'] for x in slice])) / n
-        tmp_event['centroid'] = float(sum([x['centroid'] for x in slice])) / n
-        mfccs = [0] * 10
-        for i, val in enumerate(mfccs):
-            mfccs[i] = float(sum([x['mfcc'][i] for x in slice])) / n
-        tmp_event['mfcc'] = mfccs
-        chroma = [0] * 12
-        for i,val in enumerate(chroma):
-            chroma[i] = float(sum([x['chroma'][i] for x in slice])) / n
-        tmp_event['chroma'] = chroma
-        tmp_event['time'] = slice[0]['time']
+        for key in keys:
+            # check if we have a vector or a scalar
+            if type(block[0][key]) == list:
+                l_vec = len(block[0][key]) # length of vector
+                feature = [0] * l_vec
+                for i in range(l_vec):
+                    feature[i] = float(sum([x[key][i] for x in block])) / n
+                tmp_event[key] = feature
+            else:    
+                tmp_event[key] = float(sum([x[key] for x in block])) / n
         new_events.append(tmp_event)
     return new_events
 
@@ -120,30 +132,7 @@ def extract_audio_features(filepath):
             chroma_frames[i].append(component[i])
     features['chroma'] = chroma_frames
     features['zerocrossings'] = zerocrossings(filepath, fft_size, hop_size)
-    features['num_events'] = len(features['centroid'])
     return features
-
-def features_to_events(features):
-    events = []
-    num_events = features['num_events']      
-    mfcc = features['mfcc']
-    rms = features['rms']
-    centroid = features['centroid']
-    chroma = features['chroma']
-    zerocrossings = features['zerocrossings']
-    event_time = 0.0
-    for i in range(num_events):
-        new_event = {}
-        new_event['time'] = event_time / 44.100
-        new_event['mfcc'] = mfcc[i]
-        new_event['rms'] = rms[i]
-        new_event['centroid'] = centroid[i]
-        new_event['chroma'] = chroma[i]
-        new_event['zerocrossings'] = zerocrossings[i]
-        new_event['time'] = fft_size * i
-        events.append(new_event) 
-        event_time += fft_size
-    return events
 
 ####################################################################################
 # oracle file helpers 
