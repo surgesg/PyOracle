@@ -114,21 +114,23 @@ def add_state(oracle, new_data, threshold = 0, weights = None):
                 pi_2 = oracle['sfx'][pi_2]
             oracle['lrs'][-1] = min(oracle['lrs'][pi_1], oracle['lrs'][pi_2]) + 1
 
-def build_oracle(input_data, threshold, feature = None):
+def build_oracle(input_data, threshold, feature = None, weights = None):
     # features should be determined by the analysis code
     # need to embed timing info into the oracle 
     global oracle
 
     oracle = {'sfx': [], 'trn': [], 'rsfx': [], 'lrs': [], 'data': []}
-    # initialize weights 
-    weights = {'mfcc': 0.0,            
-               'centroid': 0.0,
-               'rms': 0.0,
-               'chroma': 0.0,
-               'zerocrossings': 0.0}
 
-    # weight the feature we want
-    weights[feature] = 1.0
+    # initialize weights if needed 
+    if weights == None:
+        weights = {'mfcc': 0.0,            
+                   'centroid': 0.0,
+                   'rms': 0.0,
+                   'chroma': 0.0,
+                   'zerocrossings': 0.0}
+
+        # weight the feature we want
+        weights[feature] = 1.0
 
     add_initial_state(oracle)
     num_events = len(input_data)
