@@ -17,13 +17,8 @@ def encode(states):
     return code and compror for a given Oracle representation
     '''
     compror = []
-    lrs = [x.lrs for x in states[1:]]
-    sfx = []
-    for x in states[1:]:
-        if x.suffix == 0:
-            sfx.append(0)
-        else:
-            sfx.append(x.suffix.number)
+    lrs = states['lrs'][1:]
+    sfx = states['sfx'][1:]
 
     # sfx = [x.suffix.number for x in states[1:]]
     code = []
@@ -176,35 +171,32 @@ def get_IR_old(states):
     return IR, code, compror
 
 def get_IR_cum(states,alpha=1):
-	
-	code, compror = encode(states)
+    N_states = len(states['sfx'])	
 
-	cw0 = np.zeros(len(states)) #cw0 counts the appearance of new states only 
-	cw1 = np.zeros(len(states)) #cw1 counts the appearance of all compror states
-	BL = np.zeros(len(states))  #BL is the block length of compror codewords
+    code, compror = encode(states)
 
-	j = 0
-	for i in range(len(code)):
-		if code[i][0] == 0:
-			cw0[j] = 1
-			cw1[j] = 1
-			BL[j] = 1
-#			print cw0[j],cw1[j]
-			j = j+1
-		else:
-			L = code[i][0]	
-			cw0[j:j+L] = [0]*L
-			cw1[j:j+L] = np.concatenate(([1], np.zeros(L-1)))
-			BL[j:j+L] = L #range(1,L+1)
-#			print L,cw0[j:j+L],cw1[j:j+L]
-			j = j+L
-#		raw_input()
+    cw0 = np.zeros((N_states)) #cw0 counts the appearance of new states only 
+    cw1 = np.zeros((N_states)) #cw1 counts the appearance of all compror states
+    BL = np.zeros((N_states))  #BL is the block length of compror codewords
 
+    j = 0
+    for i in range(len(code)):
+        if code[i][0] == 0:
+            cw0[j] = 1
+            cw1[j] = 1
+            BL[j] = 1
+            j = j+1
+        else:
+            L = code[i][0]	
+            cw0[j:j+L] = [0]*L
+            cw1[j:j+L] = np.concatenate(([1], np.zeros(L-1)))
+            BL[j:j+L] = L #range(1,L+1)
+            j = j+L
 
-	H0 = np.array([math.log(x,2) for x in np.cumsum(cw0)])
-	H1 = np.array([math.log(x,2) for x in np.cumsum(cw1)])
-	H1 = H1/BL
-	IR = alpha*H0-H1
-	IR = np.array([max(0, x) for x in IR])
+    H0 = np.array([math.log(x,2) for x in np.cumsum(cw0)])
+    H1 = np.array([math.log(x,2) for x in np.cumsum(cw1)])
+    H1 = H1/BL
+    IR = alpha*H0-H1
+    IR = np.array([max(0, x) for x in IR])
 
-	return IR, code, compror
+    return IR, code, compror
