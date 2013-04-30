@@ -68,7 +68,7 @@ def features_to_events(features):
         for key in keys:
             new_event[key] = features[key][i]
         events.append(new_event)    
-    
+
     return events
 
 def average_events(events, n):
@@ -81,12 +81,14 @@ def average_events(events, n):
         for key in keys:
             # check if we have a vector or a scalar
             if type(block[0][key]) == list:
+                # vector
                 l_vec = len(block[0][key]) # length of vector
                 feature = [0] * l_vec
                 for i in range(l_vec):
                     feature[i] = float(sum([x[key][i] for x in block])) / n
                 tmp_event[key] = feature
             else:    
+                # scalar
                 tmp_event[key] = float(sum([x[key] for x in block])) / n
         new_events.append(tmp_event)
     return new_events

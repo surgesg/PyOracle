@@ -99,7 +99,10 @@ def add_state(oracle, new_data, threshold = 0, weights = None):
                 oracle['sfx'][i] = S_i
                 
                 # add rev suffix
-                oracle['rsfx'][S_i] = i
+                if type(oracle['rsfx'][S_i]) == list:
+                    oracle['rsfx'][S_i].append(i)
+                else:
+                    oracle['rsfx'][S_i] = [i]
                 break
     # LRS 
     ss = oracle['sfx'][-1]
@@ -115,8 +118,6 @@ def add_state(oracle, new_data, threshold = 0, weights = None):
             oracle['lrs'][-1] = min(oracle['lrs'][pi_1], oracle['lrs'][pi_2]) + 1
 
 def build_oracle(input_data, threshold, feature = None, weights = None):
-    # features should be determined by the analysis code
-    # need to embed timing info into the oracle 
     global oracle
 
     oracle = {'sfx': [], 'trn': [], 'rsfx': [], 'lrs': [], 'data': []}
@@ -133,22 +134,17 @@ def build_oracle(input_data, threshold, feature = None, weights = None):
         weights[feature] = 1.0
 
     add_initial_state(oracle)
-    num_events = len(input_data)
-    for i, event in enumerate(input_data):
+    for event in input_data:
         add_state(oracle, event, threshold, weights)
-        # progress output
     return oracle 
 
 def build_weighted_oracle(input_data, threshold, weights):
-    # features should be determined by the analysis code
-    # need to embed timing info into the oracle 
     oracle = []
 
     add_initial_state(oracle)
-    num_events = len(input_data)
-    for i, event in enumerate(input_data):
+
+    for event in input_data:
         add_state(oracle, event, threshold, weights)
-        # progress output
     return oracle 
 
 def build_dynamic_oracle(input_data, threshold, weights):
@@ -157,7 +153,6 @@ def build_dynamic_oracle(input_data, threshold, weights):
     oracle = []
 
     add_initial_state(oracle)
-    num_events = len(input_data)
     for i, event in enumerate(input_data):
         add_state(oracle, event, threshold, weights[i])
         # progress output

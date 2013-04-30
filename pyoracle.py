@@ -15,6 +15,7 @@ import Resources.PyOracle.IR
 import Resources.DrawOracle
 import Resources.generate
 
+
 def make_features(filename, fft_size = 4096, hop_size = 4096):
     '''
     extract list of features from audio file, using Bregman module
@@ -82,11 +83,12 @@ def calculate_ideal_threshold(range=(0.0, 1.0, 0.1), features = None, feature =
     using IR, return optimum distance threshold for a given oracle
     '''
     thresholds = np.arange(range[0], range[1], range[2])
-    oracles = []
+    # oracles = []
     irs = []
+
     for threshold in thresholds:
         tmp_oracle = make_oracle(threshold, features, feature, frames_per_state)
-        oracles.append(tmp_oracle)
+        # oracles.append(tmp_oracle)
         tmp_ir, code, compror = calculate_ir(tmp_oracle, alpha, type)
         # is it a sum?
         if type=='old' or type=='cum':
@@ -135,6 +137,4 @@ def load_oracle(filename):
 def draw_oracle(oracle, filename, size=(900*4, 400*4)):
     image = Resources.DrawOracle.start_draw(oracle, size) 
     image.save(filename)
-    pass 
-
 

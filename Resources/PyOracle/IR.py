@@ -1,15 +1,13 @@
 ############################################################
 # IR.py 
 # compute IR for a given PyOracle
-# after Shlomo Dubnov
-# modified 09.18.2012
 # greg surges
-# 2011 - 2012
+# 2011 - 2013
 # Shlomo modified 02.12.2013
+# Greg last modified 03.21.2013 
 ###########################################################
 
 import math
-from scipy.signal import lfilter
 import numpy as np
 
 def encode(states):
@@ -74,13 +72,6 @@ def encode_old(states):
         j = i
     return code, compror
 
-def count_rev_suffixes(state):
-    num = 1
-    for s in state.reverse_suffix:
-        num = num + count_rev_suffixes(s)
-    return num
-
-
 def ent(x):
     n = sum(x)
     h = 0
@@ -88,15 +79,6 @@ def ent(x):
         p = float(x[i])/n
         h = h-p*math.log(p,2)
     return h
-
-def extend_code(code):
-    e_code = []
-    for i in range(len(code)):
-        e_code.append(code[i])
-        if code[i][0] > 1:
-            for j in range(code[i][0] - 1):
-                e_code.append((-0.9999999, i))
-    return e_code
 
 def get_IR(states, alpha = 1.1):
     '''
