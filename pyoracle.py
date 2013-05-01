@@ -26,7 +26,7 @@ def make_features(filename, fft_size = 4096, hop_size = 4096):
     features = Resources.helpers.extract_audio_features(filename)
     return features
 
-def make_oracle(threshold, features_list, feature, frames_per_state = 1):
+def make_oracle(threshold, features_list, feature, frames_per_state = 1, dfunc = 'euclidian'):
     '''
     build an oracle given:
         threshold - distance function theshold
@@ -36,7 +36,7 @@ def make_oracle(threshold, features_list, feature, frames_per_state = 1):
     '''
     events = Resources.helpers.features_to_events(features_list)
     events = Resources.helpers.average_events(events, frames_per_state)
-    oracle = Resources.PyOracle.PyOracle.build_oracle(events, threshold, feature)
+    oracle = Resources.PyOracle.PyOracle.build_oracle(events, threshold, feature, dfunc = dfunc)
     return oracle
 
 def make_weighted_oracle(threshold, features_list, weights):
@@ -78,7 +78,7 @@ def calculate_ir(oracle, alpha=1, type='cum'):
     return IR, code, compror
 
 def calculate_ideal_threshold(range=(0.0, 1.0, 0.1), features = None, feature =
-        None, frames_per_state = 1, alpha = 1,  type='cum'):
+        None, frames_per_state = 1, alpha = 1,  type='cum', dfunc ='euclidian'):
     ''' 
     using IR, return optimum distance threshold for a given oracle
     '''
@@ -87,7 +87,7 @@ def calculate_ideal_threshold(range=(0.0, 1.0, 0.1), features = None, feature =
     irs = []
 
     for threshold in thresholds:
-        tmp_oracle = make_oracle(threshold, features, feature, frames_per_state)
+        tmp_oracle = make_oracle(threshold, features, feature, frames_per_state, dfunc = dfunc)
         # oracles.append(tmp_oracle)
         tmp_ir, code, compror = calculate_ir(tmp_oracle, alpha, type)
         # is it a sum?

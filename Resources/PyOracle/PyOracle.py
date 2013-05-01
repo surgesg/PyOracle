@@ -10,13 +10,15 @@ import time
 
 from random import randint
 from itertools import izip
+from numpy import array, size, zeros, shape, log, exp
+from math import isnan
 
 oracle = {'sfx': [], 'trn': [], 'rsfx': [], 'lrs': [], 'data': []}
 #############################################################################
 # ORACLE CONSTRUCTION FUNCTIONS
 #############################################################################
 
-def get_distance(event1, event2, weights = None):
+def get_distance(event1, event2, weights = None, dfunc = 'euclidian'):
     '''
     get distance between frames
     '''
@@ -38,17 +40,28 @@ def get_distance(event1, event2, weights = None):
             n = len(event1[feature])
         except:
             n = 1
-        if n > 1:
-            # is a vector
-            data = izip(event1[feature], event2[feature])
-            data = sum((a - b) * (a - b) for a, b in data) / n
-            data *= weights[feature]
-            distance += data
-        else:
-            # is a scaler
-            data = ((event1[feature] - event2[feature]) * (event1[feature] - event2[feature]))
-            data *= weights[feature]
-            distance += data
+        if dfunc == 'euclidian':
+            if n > 1:
+                # is a vector
+                data = izip(event1[feature], event2[feature])
+                data = sum((a - b) * (a - b) for a, b in data) / n
+                data *= weights[feature]
+                distance += data
+            else:
+                # is a scaler
+                data = ((event1[feature] - event2[feature]) * (event1[feature] - event2[feature]))
+                data *= weights[feature]
+                distance += data
+        elif dfunc == 'bregman':
+            # multinomial bregman
+            sevent1 = event1[feature]
+            sevent2 = event2[feature]
+            data = multinomial_bregman_div(sevent1, sevent2) 
+            if isnan(data):
+                data = 1000
+                print feature, event1[feature]
+            distance += data * weights[feature]
+        # print feature, distance
     return distance
 
 def add_initial_state(oracle):
@@ -58,7 +71,7 @@ def add_initial_state(oracle):
     oracle['lrs'].append(0)
     oracle['data'].append(0)
 
-def add_state(oracle, new_data, threshold = 0, weights = None):
+def add_state(oracle, new_data, threshold = 0, weights = None, dfunc = 'euclidian'):
     # create new state
     oracle['sfx'].append(0)
     oracle['rsfx'].append([])
@@ -76,7 +89,7 @@ def add_state(oracle, new_data, threshold = 0, weights = None):
 
     # iteratively backtrack suffixes from state i-1
     while k != None:
-        dvec = [get_distance(new_data, oracle['data'][s], weights) < threshold for s in oracle['trn'][k]]
+        dvec = [get_distance(new_data, oracle['data'][s], weights, dfunc) < threshold for s in oracle['trn'][k]]
         # if no transition from suffix
         if True not in dvec:
             oracle['trn'][k].append(i)
@@ -89,11 +102,11 @@ def add_state(oracle, new_data, threshold = 0, weights = None):
         oracle['sfx'][i] = 0
     else:
         # filter out all above distance thresh
-        filtered_transitions = filter(lambda x: get_distance(oracle['data'][x], new_data, weights) <= threshold, oracle['trn'][k])
+        filtered_transitions = filter(lambda x: get_distance(oracle['data'][x], new_data, weights, dfunc) <= threshold, oracle['trn'][k])
         # sort possible suffixes by LRS
         sorted_list = sorted(filtered_transitions, key = lambda x: oracle['lrs'][x])
         for t in sorted_list:
-            if get_distance(oracle['data'][t], new_data, weights) <= threshold:
+            if get_distance(oracle['data'][t], new_data, weights, dfunc) <= threshold:
                 # add suffix
                 S_i = t
                 oracle['sfx'][i] = S_i
@@ -117,7 +130,7 @@ def add_state(oracle, new_data, threshold = 0, weights = None):
                 pi_2 = oracle['sfx'][pi_2]
             oracle['lrs'][-1] = min(oracle['lrs'][pi_1], oracle['lrs'][pi_2]) + 1
 
-def build_oracle(input_data, threshold, feature = None, weights = None):
+def build_oracle(input_data, threshold, feature = None, weights = None, dfunc = 'euclidian'):
     global oracle
 
     oracle = {'sfx': [], 'trn': [], 'rsfx': [], 'lrs': [], 'data': []}
@@ -135,7 +148,7 @@ def build_oracle(input_data, threshold, feature = None, weights = None):
 
     add_initial_state(oracle)
     for event in input_data:
-        add_state(oracle, event, threshold, weights)
+        add_state(oracle, event, threshold, weights, dfunc)
     return oracle 
 
 def build_weighted_oracle(input_data, threshold, weights):
@@ -157,3 +170,80 @@ def build_dynamic_oracle(input_data, threshold, weights):
         add_state(oracle, event, threshold, weights[i])
         # progress output
     return oracle 
+
+def vector_to_distribution(q):
+    d = q
+    # print d, d.shape
+    try:
+        for i, data in enumerate(q):
+            d[i,:] = d[i,:] / sum(d[i,:])
+    except TypeError:
+        pass
+    except IndexError:
+        pass
+    return d
+
+def dist_to_multinomial(q):
+    '''
+    convert raw distributions to multinomial natural parameters
+    see : http://cosmal.ucsd.edu/~arshia/musant/?n=InformationGeometry.ExponentialFamilies
+    '''
+    
+    q = array(q)
+    shape_q = shape(q)
+    # print 'shape q:', shape(q), 'q:', q
+    if shape(q) == ():
+        d = 1
+        n = 1
+    else:
+        d = len(q) # dimensions
+        n = 1
+        
+    if d > 1:
+    # normalize Qs to make sre they are distributions
+        q = vector_to_distribution(q)
+    # print 'normalized Qs:', q 
+    theta = zeros((d))
+    # print theta, n, d
+    
+    try:
+        for i in range(0, d):
+            # print q[i] / q[d-1]
+            # is this abs() misplaced?
+            theta[i] = log(abs(q[i] / q[d-1]) + 0.0000001)
+    except IndexError:
+        # single number
+        # print 'q after indexerror:', q
+        theta = log(abs(q))
+    
+    # print 'theta: ', theta
+    return theta
+
+def multinomial_grad_f(theta):
+    # f is the cumulant function of the multinomial exponential canonical form
+    s = 0.0
+    
+    try:
+        s = sum(exp(theta))
+    except TypeError:
+        s = exp(theta)
+    result = exp(theta) / (1+s)
+    
+    return result
+
+def F(p):
+    # print p
+    try:
+        return log(1 + sum(exp(p)))
+    except TypeError:
+        return log(1+exp(p))
+
+def multinomial_bregman_div(p, q):
+    p = dist_to_multinomial(p)
+    q = dist_to_multinomial(q)
+    pq = p - q
+    try:
+        result = F(p) - F(q) - sum(pq * multinomial_grad_f(q))
+    except TypeError:
+        result = F(p) - F(q) - (pq * multinomial_grad_f(q))
+    return result

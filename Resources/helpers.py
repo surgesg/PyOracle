@@ -12,6 +12,7 @@ import shelve
 from scipy.signal import medfilt
 import numpy as np
 from matplotlib.mlab import find
+from math import isnan
 
 try:
     from bregman.suite import *
@@ -80,14 +81,14 @@ def average_events(events, n):
         tmp_event = {}
         for key in keys:
             # check if we have a vector or a scalar
-            if type(block[0][key]) == list:
+            try:
                 # vector
                 l_vec = len(block[0][key]) # length of vector
                 feature = [0] * l_vec
                 for i in range(l_vec):
                     feature[i] = float(sum([x[key][i] for x in block])) / n
                 tmp_event[key] = feature
-            else:    
+            except:    
                 # scalar
                 tmp_event[key] = float(sum([x[key] for x in block])) / n
         new_events.append(tmp_event)
@@ -121,8 +122,7 @@ def extract_audio_features(filepath):
     features['mfcc'] = frames
     rms = RMS(filepath, nfft=fft_size, wfft=fft_size, nhop=hop_size)
     features['rms'] = rms.X
-    mf_spec_centroid = MelFrequencySpectrumCentroid(filepath, nfft=fft_size,
-            wfft=fft_size, nhop=hop_size)
+    mf_spec_centroid = MelFrequencySpectrumCentroid(filepath, nfft=fft_size, wfft=fft_size, nhop=hop_size)
     features['centroid'] = mf_spec_centroid.X
     # chroma = Chromagram(filepath, log10=True, intensify=True, nfft=fft_size, wfft=fft_size, nhop=fft_size)
     chroma = HighQuefrencyChromagram(filepath, log10=True, intensify=True,
@@ -134,7 +134,23 @@ def extract_audio_features(filepath):
             chroma_frames[i].append(component[i])
     features['chroma'] = chroma_frames
     features['zerocrossings'] = zerocrossings(filepath, fft_size, hop_size)
+    features = block_nans(features)
     return features
+
+def block_nans(feat_dict):
+    features = feat_dict.keys()
+    for feature in features:
+        nans_removed = []
+        try:
+            for d in feat_dict[feature]:
+                if isnan(d):
+                    nans_removed.append(0)
+                else:
+                    nans_removed.append(d)
+        except TypeError:
+            nans_removed = feat_dict[feature]
+        feat_dict[feature] = np.array(nans_removed)
+    return feat_dict
 
 ####################################################################################
 # oracle file helpers 
