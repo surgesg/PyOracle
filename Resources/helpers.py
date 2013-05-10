@@ -9,7 +9,7 @@
 import cPickle as pickle
 import sys
 import shelve
-from scipy.signal import medfilt
+# from scipy.signal import medfilt
 import numpy as np
 from matplotlib.mlab import find
 
@@ -155,6 +155,7 @@ def load_oracle(filename):
 # IR filtering
 ####################################################################################
 
+'''
 def apply_median(data, k_size):
     keys = sorted(data.keys())
     array = [data[key] for key in keys]
@@ -162,3 +163,4 @@ def apply_median(data, k_size):
     array = medfilt(array, k_size)
     array = {key: val for (key, val) in zip(keys, array)}
     return array
+'''
