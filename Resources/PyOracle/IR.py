@@ -44,15 +44,9 @@ def encode_old(states):
     return code and compror for a given Oracle representation
     '''
     compror = []
-    lrs = [x.lrs for x in states[1:]]
-    sfx = []
-    for x in states[1:]:
-        if x.suffix == 0:
-            sfx.append(0)
-        else:
-            sfx.append(x.suffix.number)
+    lrs = states['lrs'][1:]
+    sfx = states['sfx'][1:]
 
-    # sfx = [x.suffix.number for x in states[1:]]
     code = []
     code.append((0,1))
     
@@ -116,37 +110,32 @@ def get_IR_old(states):
     '''
     code, compror = encode_old(states)
 
-    trn = [x.transition for x in states]
-    sfx = []
-    for x in states[1:]:
-        if x.suffix == 0:
-            sfx.append(0)
-        else:
-            sfx.append(x.suffix.number)
-    lrs = [x.lrs for x in states]
+    trn = states['trn']
+    sfx = states['sfx']
+    lrs = states['lrs']
 
     # proposed modification - 10.23.2012
     # takes into account that all transitions are not equally probably (occuring
     # with equal frequency over the length of the sequence
-    P = [0] * len(states[0].transition)
+    P = [0] * len(states['trn'][0])
     # rename
     N = []
-    for t in states[0].transition: # for each new state
-        N_i = count_rev_suffixes(t.pointer)
+    for t in states['trn'][0]: # for each new state
+        N_i = len(states['rsfx'][t])
         N.append(N_i) 
     for i in range(len(P)):
         P[i] = float(N[i]) / sum(N)
-    C0 = -1 * sum([p * math.log(p, 2) for p in P]) 
+    C0 = -1 * sum([p * math.log(p + 0.000000000000000000000001, 2) for p in P]) 
 
     # calculate IR from Compror
-    IR = [0] * len(states)
+    IR = [0] * len(states['lrs'])
     # C0 = math.log(len(trn[0]), 2)
     N = len(lrs)
     M = max(lrs)
     try:
         C1 = math.log(N, 2) + math.log(M, 2)
     except ValueError: # if log(0)
-        C1 = math.log(N, 2) + math.log(0.0000000000000001, 2)
+        C1 = math.log(0.0000000000000001 + N, 2) + math.log(0.0000000000000001 + M, 2)
     for i in range(1, len(compror)):
         L = compror[i] - compror[i - 1]
         IR[compror[i - 1]:compror[i]] = [max(C0 - C1 / L, 0)] * L

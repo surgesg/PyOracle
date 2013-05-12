@@ -75,6 +75,7 @@ def calculate_ir(oracle, alpha=1, type='cum'):
     	IR, code, compror = Resources.PyOracle.IR.get_IR_cum(oracle,alpha)
     else:
         IR, code, compror = Resources.PyOracle.IR.get_IR(oracle, alpha)
+        IR = IR[1]
     return IR, code, compror
 
 def calculate_ideal_threshold(range=(0.0, 1.0, 0.1), features = None, feature =
@@ -87,6 +88,7 @@ def calculate_ideal_threshold(range=(0.0, 1.0, 0.1), features = None, feature =
     irs = []
 
     for threshold in thresholds:
+        print 'testing threshold:', threshold
         tmp_oracle = make_oracle(threshold, features, feature, frames_per_state, dfunc = dfunc)
         # oracles.append(tmp_oracle)
         tmp_ir, code, compror = calculate_ir(tmp_oracle, alpha, type)
